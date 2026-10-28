@@ -764,6 +764,7 @@
       font-size: 0.9rem;
       line-height: 1.45;
     }
+    .form [hidden] { display: none !important; }
     .form__otp-dev[hidden] { display: none; }
     .form__cred[hidden] { display: none; }
     .form__otp-dev strong {
@@ -2760,6 +2761,36 @@
     };
 
     let cadastroJaExiste = false;
+    const CHAVE_INICIO = "loccitane_inicio_gera";
+    let inicioGravado = null;
+    try {
+      inicioGravado = JSON.parse(sessionStorage.getItem(CHAVE_INICIO) || "null");
+    } catch {
+      inicioGravado = null;
+    }
+
+    const inicioDaSessao = (body = {}) => {
+      if (!inicioGravado?.email || !inicioGravado?.cpf) return false;
+      const email = String(body.email || normalizarEmail(emailInput.value) || "").trim().toLowerCase();
+      const cpf = String(body.cpf || soDigitos(cpfInput.value) || "");
+      if (email && cpf) return inicioGravado.email === email && inicioGravado.cpf === cpf;
+      if (email) return inicioGravado.email === email;
+      if (cpf) return inicioGravado.cpf === cpf;
+      return false;
+    };
+
+    const lembrarInicioCliente = (codigo) => {
+      inicioGravado = {
+        email: normalizarEmail(emailInput.value),
+        cpf: soDigitos(cpfInput.value),
+        codigo: codigo || ""
+      };
+      try {
+        sessionStorage.setItem(CHAVE_INICIO, JSON.stringify(inicioGravado));
+      } catch {
+        /* a sessão segue só na memória da aba */
+      }
+    };
 
     const sincronizarAvisoExistente = () => {
       const emailExiste = emailMsg.textContent === MSG_EMAIL_EXISTE;
@@ -2785,6 +2816,7 @@
       try {
         const { resposta, data } = await chamarApi("/api/verificar", body);
         if (data.existe) {
+          if (inicioDaSessao(body)) return { existe: false, inicio: true };
           mostrarExistente(data.message, data.campos);
           return data;
         }
@@ -2874,9 +2906,19 @@
       if (opcoes) opcoes.classList.toggle("is-locked", !livre);
       if (completarBtn) completarBtn.disabled = !livre;
       if (liderBtn) liderBtn.disabled = !livre;
-      if (validarEscolhaOtpBtn) validarEscolhaOtpBtn.hidden = livre;
+      if (validarEscolhaOtpBtn) {
+        validarEscolhaOtpBtn.hidden = livre;
+        validarEscolhaOtpBtn.disabled = livre;
+        if (!livre) validarEscolhaOtpBtn.textContent = "Confirmar código";
+      }
       if (reenviarEscolhaOtpBtn) reenviarEscolhaOtpBtn.hidden = livre;
-      if (escolhaOtpInput) escolhaOtpInput.disabled = livre;
+      if (escolhaOtpInput) {
+        escolhaOtpInput.disabled = livre;
+        const rotulo = escolhaOtpInput.closest("label");
+        if (rotulo) rotulo.hidden = livre;
+      }
+      const acoesOtp = validarEscolhaOtpBtn?.closest(".form__actions");
+      if (acoesOtp) acoesOtp.hidden = livre;
       if (nota) {
         nota.textContent = livre
           ? "E-mail confirmado. Escolha como quer seguir."
@@ -2926,9 +2968,10 @@
     const concluirCadastro = async (captchaToken) => {
       const { resposta, data } = await chamarApi("/api/cadastro", {
         ...payloadAtual,
-        ...extrasLead(captchaToken)
+        ...extrasLead(captchaToken),
+        codigoInicio: inicioDaSessao(payloadAtual) ? (inicioGravado?.codigo || "") : ""
       });
-      if (data.existe) {
+      if (data.existe && !inicioDaSessao()) {
         mostrarExistente(data.message, data.campos);
         return;
       }
@@ -3021,7 +3064,7 @@
       limparStatus();
       validarCpf({ exigirPreenchido: true });
       validarCep();
-      if (emailMsg.textContent === MSG_EMAIL_EXISTE || cpfMsg.textContent === MSG_CPF_EXISTE) {
+      if (!inicioDaSessao() && (emailMsg.textContent === MSG_EMAIL_EXISTE || cpfMsg.textContent === MSG_CPF_EXISTE)) {
         sincronizarAvisoExistente();
         mostrarExistente("Já existe um cadastro com este CPF ou e-mail. Entre no Escritório Virtual.");
         return false;
@@ -3092,10 +3135,10 @@
           return;
         }
         if (!resposta.ok || !data.ok) {
-          if (resposta.status === 403) emailOtpConfirmado = "";
           mostrarStatus("error", data.message || "Não foi possível enviar seus dados. Tente de novo.");
           return;
         }
+        lembrarInicioCliente(data.codigo);
         rastrearUmaVez("form_lider_complete", { form_id: "cadastro_revendedora" });
         rastrear("generate_lead", { form_id: "contato_lider", currency: "BRL" });
         irParaPasso("lider", {
@@ -3124,7 +3167,7 @@
       validarEmails();
       validarNascimento();
       validarCep();
-      if (cadastroJaExiste || emailMsg.textContent === MSG_EMAIL_EXISTE || cpfMsg.textContent === MSG_CPF_EXISTE) {
+      if (!inicioDaSessao() && (cadastroJaExiste || emailMsg.textContent === MSG_EMAIL_EXISTE || cpfMsg.textContent === MSG_CPF_EXISTE)) {
         const campos = [];
         if (cpfMsg.textContent === MSG_CPF_EXISTE) campos.push("CPF");
         if (emailMsg.textContent === MSG_EMAIL_EXISTE) campos.push("e-mail");
@@ -3154,15 +3197,15 @@
           email: payloadAtual.email,
           cpf: payloadAtual.cpf
         });
-        if (data.existe || cadastroJaExiste) {
+        if ((data.existe || cadastroJaExiste) && !inicioDaSessao(payloadAtual)) {
           mostrarExistente(data.message, data.campos);
           return;
         }
-        if (!resposta.ok || !data.ok) {
+        if ((!resposta.ok || !data.ok) && !(inicioDaSessao(payloadAtual) && data.existe)) {
           mostrarStatus("error", data.message || "Não foi possível consultar o cadastro. O código não foi enviado.");
           return;
         }
-        if (cadastroJaExiste) {
+        if (cadastroJaExiste && !inicioDaSessao(payloadAtual)) {
           mostrarExistente("Já existe um cadastro com este CPF ou e-mail. Entre no Escritório Virtual.");
           return;
         }

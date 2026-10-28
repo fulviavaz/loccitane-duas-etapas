@@ -447,6 +447,37 @@ const SELLER_GET_PATH = process.env.GERA_SELLER_GET_PATH || "/api/Public/Sellers
 const OTP_DEV_REVEAL = String(process.env.OTP_DEV_REVEAL || "") === "1";
 const emailsVerificados = new Map();
 const otpLocais = new Map();
+const iniciosGravados = new Map();
+
+const chaveInicio = (cpf, email) => `${String(cpf || "")}|${String(email || "").trim().toLowerCase()}`;
+
+const lembrarInicioGravado = (cpf, email, codigo) => {
+  iniciosGravados.set(chaveInicio(cpf, email), {
+    codigo: String(codigo || ""),
+    expira: Date.now() + 24 * 60 * 60 * 1000
+  });
+};
+
+const inicioGravadoNestaSessao = (cpf, email) => {
+  const cpfBusca = String(cpf || "");
+  const emailBusca = String(email || "").trim().toLowerCase();
+  const agora = Date.now();
+  for (const [chave, item] of iniciosGravados) {
+    if (!item || agora > item.expira) {
+      iniciosGravados.delete(chave);
+      continue;
+    }
+    const [cpfSalvo, emailSalvo] = chave.split("|");
+    const cpfBate = Boolean(cpfBusca) && cpfSalvo === cpfBusca;
+    const emailBate = Boolean(emailBusca) && emailSalvo === emailBusca;
+    if (cpfBusca && emailBusca) {
+      if (cpfBate && emailBate) return item;
+      continue;
+    }
+    if (cpfBate || emailBate) return item;
+  }
+  return null;
+};
 
 const marcarEmailVerificado = (email) => {
   emailsVerificados.set(email, Date.now() + 15 * 60 * 1000);
@@ -1196,7 +1227,7 @@ app.post("/api/verificar", async (req, res) => {
       cpf: cpfOk ? cpf : "",
       email: emailOk ? email : ""
     });
-    if (consulta.existe) {
+    if (consulta.existe && !inicioGravadoNestaSessao(cpfOk ? cpf : "", emailOk ? email : "")) {
       return res.json({
         ok: false,
         existe: true,
@@ -1344,12 +1375,6 @@ app.post("/api/lider", async (req, res) => {
   if (validacao.erro) {
     return res.status(400).json({ ok: false, message: validacao.erro });
   }
-  if (!emailFoiVerificado(validacao.dados.email)) {
-    return res.status(403).json({
-      ok: false,
-      message: "Confirme o código enviado por e-mail antes de falar com a líder."
-    });
-  }
   if (!BASE_URL) {
     return res.status(503).json({
       ok: false,
@@ -1359,7 +1384,17 @@ app.post("/api/lider", async (req, res) => {
   try {
     const token = await obterToken();
     const consulta = await consultarExistencia(token, validacao.dados);
+    const inicioAnterior = inicioGravadoNestaSessao(validacao.dados.cpf, validacao.dados.email);
     if (consulta.existe) {
+      if (inicioAnterior) {
+        return res.json({
+          ok: true,
+          codigo: inicioAnterior.codigo || "",
+          etapa: "inicio",
+          jaGravado: true,
+          message: "Recebemos seus dados. Uma líder da sua região vai falar com você pelo WhatsApp."
+        });
+      }
       return res.status(409).json({
         ok: false,
         existe: true,
@@ -1398,6 +1433,8 @@ app.post("/api/lider", async (req, res) => {
       });
     }
     const codigo = extrairCodigoRevendedora(corpo);
+    lembrarInicioGravado(validacao.dados.cpf, validacao.dados.email, codigo);
+    console.log("[lider] etapa 1 gravada", validacao.dados.email, codigo || "sem-codigo");
     return res.json({
       ok: true,
       codigo: codigo || "",
@@ -1435,7 +1472,8 @@ app.post("/api/cadastro", async (req, res) => {
   try {
     const token = await obterToken();
     const consulta = await consultarExistencia(token, validacao.dados);
-    if (consulta.existe) {
+    const inicioAnterior = inicioGravadoNestaSessao(validacao.dados.cpf, validacao.dados.email);
+    if (consulta.existe && !inicioAnterior) {
       return res.status(409).json({
         ok: false,
         existe: true,
@@ -1443,6 +1481,9 @@ app.post("/api/cadastro", async (req, res) => {
         campos: consulta.campos,
         message: `Já existe um cadastro com este ${consulta.campo}. Entre no Escritório Virtual.`
       });
+    }
+    if (inicioAnterior) {
+      console.log("[cadastro] complemento da etapa 1", validacao.dados.email, inicioAnterior.codigo || "sem-codigo");
     }
 
     let geographicStructureCode = "";
@@ -1471,10 +1512,14 @@ app.post("/api/cadastro", async (req, res) => {
     if (!resposta.ok) {
       const bruta = extrairMensagem(corpo);
       const existe = /already|exist|duplicate|já cadastr|ja cadastr|em uso/i.test(bruta);
+      const complementoRecusado = existe && inicioAnterior;
       return res.status(existe ? 409 : (resposta.status === 401 ? 502 : resposta.status)).json({
         ok: false,
         existe,
-        message: mensagemAmigavel(bruta, resposta.status)
+        complemento: complementoRecusado,
+        message: complementoRecusado
+          ? "Seus dados iniciais já estão na Gera. O complemento não foi aceito porque o CPF já foi registrado nesta etapa."
+          : mensagemAmigavel(bruta, resposta.status)
       });
     }
 
