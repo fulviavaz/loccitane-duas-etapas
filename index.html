@@ -821,6 +821,11 @@
       box-shadow: 0 0 0 3px rgba(192, 32, 49, 0.12);
     }
     .form .form__opcao:disabled { opacity: 0.6; cursor: wait; }
+    .form__opcoes.is-locked .form__opcao,
+    .form__opcoes.is-locked .form__opcao:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
     .form__opcao strong {
       font-size: 1rem;
       color: var(--red);
@@ -1739,12 +1744,24 @@
           </div>
 
           <div class="form__step form__step--escolha">
-            <div class="form__opcoes">
-              <button class="form__opcao" id="lead-falar-lider" type="button">
+            <div class="form__otp-dev" id="escolha-otp-dev" hidden>
+              O e-mail da Indico pode atrasar. Em teste, use este código:
+              <strong id="escolha-otp-dev-code"></strong>
+            </div>
+            <label class="full">Código de 6 dígitos
+              <input id="escolha-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-describedby="escolha-otp-note" />
+            </label>
+            <div class="form__actions">
+              <button class="btn" id="escolha-validar-otp" type="button">Confirmar código</button>
+              <button class="btn btn--ghost" id="escolha-reenviar-otp" type="button">Reenviar código</button>
+            </div>
+            <p class="form__note" id="escolha-otp-note">Enviamos um código para o seu e-mail. Confirme para liberar as opções abaixo.</p>
+            <div class="form__opcoes is-locked" id="escolha-opcoes">
+              <button class="form__opcao" id="lead-falar-lider" type="button" disabled>
                 <strong>Quero falar com a Líder</strong>
                 <span>Uma líder da sua região chama você no WhatsApp, tira suas dúvidas e ajuda a começar.</span>
               </button>
-              <button class="form__opcao" id="lead-completar" type="button">
+              <button class="form__opcao" id="lead-completar" type="button" disabled>
                 <strong>Completar e finalizar cadastro</strong>
                 <span>Mais 1 minuto: endereço de entrega e seu acesso ao Escritório Virtual.</span>
               </button>
@@ -1839,7 +1856,7 @@
               <button class="btn" id="lead-submit" type="submit">Quero começar a vender</button>
               <button class="btn btn--ghost" id="lead-voltar-inicio" type="button">Voltar</button>
             </div>
-            <p class="form__note">Validamos CEP, e-mail e CPF. Se estiver tudo certo, enviamos um código para o seu e-mail.</p>
+            <p class="form__note">O e-mail já foi confirmado com o código. Ao enviar, criamos seu acesso ao Escritório Virtual.</p>
           </div>
 
           <div class="form__step form__step--lider">
@@ -2197,180 +2214,6 @@
   </footer>
 
   <a class="sticky-cta" id="sticky-cta" href="#cadastro">Quero me cadastrar</a>
-  <style>
-    .demo-faixa {
-      position: sticky; top: 0; z-index: 9999;
-      padding: 0.55rem 1rem;
-      background: #3B2A22; color: #FFF6F0;
-      font: 500 0.8rem/1.4 system-ui, sans-serif; text-align: center;
-    }
-    .demo-faixa code { background: rgba(255,255,255,0.14); padding: 0.05rem 0.35rem; border-radius: 4px; }
-    .demo-bd-abrir {
-      position: fixed; left: 16px; bottom: 88px; z-index: 9999;
-      padding: 0.65rem 1rem; border: 0; border-radius: 999px;
-      background: #3B2A22; color: #fff; font: 600 0.82rem system-ui, sans-serif;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.25); cursor: pointer;
-    }
-    .demo-bd {
-      position: fixed; inset: auto 16px 140px 16px; z-index: 9999;
-      max-width: 980px; max-height: 60vh; overflow: auto; margin: 0 auto;
-      padding: 1rem; border-radius: 14px; background: #fff; color: #3B2A22;
-      font: 0.82rem/1.4 system-ui, sans-serif; box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-    }
-    .demo-bd[hidden] { display: none; }
-    .demo-bd h4 { margin: 0 0 0.25rem; font-size: 1rem; }
-    .demo-bd p { margin: 0 0 0.75rem; color: #6E564A; }
-    .demo-bd table { width: 100%; border-collapse: collapse; }
-    .demo-bd th, .demo-bd td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #EFE3D6; text-align: left; white-space: nowrap; }
-    .demo-bd th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6E564A; }
-    .demo-bd__acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
-    .demo-bd__acoes button {
-      padding: 0.5rem 0.9rem; border-radius: 999px; border: 1.5px solid #E7D8C8;
-      background: #FFFCF9; color: #C02031; font: 600 0.8rem system-ui, sans-serif; cursor: pointer;
-    }
-    .demo-bd__acoes button.is-main { background: #C02031; border-color: #C02031; color: #fff; }
-    .demo-tag { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
-    .demo-tag--novo { background: #FFF1D6; color: #8A5A00; }
-    .demo-tag--exportado { background: #E8F6EE; color: #1F6B3A; }
-    .demo-tag--gera { background: #E6F0FA; color: #1D5A91; }
-  </style>
-  <div class="demo-faixa">
-    Modo demonstração: nada é enviado de verdade. Para simular "já cadastrado", use o CPF <code>111.444.777-35</code>.
-  </div>
-  <button class="demo-bd-abrir" id="demo-bd-abrir" type="button">BD Líder (demo) · 0</button>
-  <div class="demo-bd" id="demo-bd" hidden>
-    <h4>BD "Quero falar com a Líder" (simulado)</h4>
-    <p>Cada pedido de contato cai aqui. A extração diária baixa só as linhas novas e marca como exportadas. A coluna Gera mostra quem completou o cadastro depois, para não mandar em dobro à L'Occitane.</p>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>Data</th><th>Nome</th><th>E-mail</th><th>CPF</th><th>WhatsApp</th><th>CEP</th><th>Cidade/UF</th><th>Origem</th><th>Exportação</th><th>Gera</th></tr></thead>
-        <tbody id="demo-bd-linhas"></tbody>
-      </table>
-    </div>
-    <div class="demo-bd__acoes">
-      <button class="is-main" id="demo-bd-csv" type="button">Baixar CSV da extração diária</button>
-      <button id="demo-bd-limpar" type="button">Limpar BD</button>
-      <button id="demo-bd-fechar" type="button">Fechar</button>
-    </div>
-  </div>
-  <script>
-    (() => {
-      const CHAVE = "demo_leads_lider";
-      let memoria = [];
-      const ler = () => { try { return JSON.parse(localStorage.getItem(CHAVE) || "[]"); } catch { return memoria; } };
-      const gravar = (lista) => { memoria = lista; try { localStorage.setItem(CHAVE, JSON.stringify(lista)); } catch {} render(); };
-      const cadastradosGera = new Set(["11144477735"]);
-      let otpAtual = "";
-      const seisDigitos = () => String(Math.floor(100000 + Math.random() * 900000));
-      const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
-      const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
-      const fmtCpf = (v) => String(v).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-      const fmtTel = (v) => String(v).replace(/(\d{2})(\d{4,5})(\d{4})/, "($1) $2-$3");
-      const fmtCep = (v) => String(v).replace(/(\d{5})(\d{3})/, "$1-$2");
-      const fmtData = (iso) => new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-      const esc = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-      window.grecaptcha = { ready: (fn) => fn(), execute: async () => "token-demo" };
-
-      const fetchOriginal = window.fetch.bind(window);
-      window.fetch = async (url, opts = {}) => {
-        const caminho = typeof url === "string" ? url : url.url;
-        if (!caminho.startsWith("/api/")) return fetchOriginal(url, opts);
-        await esperar(caminho === "/api/config" ? 0 : 700);
-        const body = opts.body ? JSON.parse(opts.body) : {};
-        switch (caminho) {
-          case "/api/config":
-            return json({ recaptchaSiteKey: "demo" });
-          case "/api/verificar": {
-            const existe = Boolean(body.cpf && cadastradosGera.has(body.cpf)) || Boolean(body.email && cadastradosGera.has(body.email));
-            const campos = [];
-            if (body.cpf && cadastradosGera.has(body.cpf)) campos.push("CPF");
-            if (body.email && cadastradosGera.has(body.email)) campos.push("e-mail");
-            return json(existe
-              ? { ok: true, existe: true, campos, message: `Já existe um cadastro com este ${campos.join(" e ")}. Entre no Escritório Virtual.` }
-              : { ok: true, existe: false });
-          }
-          case "/api/lider": {
-            const lista = ler().filter((l) => l.cpf !== body.cpf);
-            lista.unshift({
-              criado_em: new Date().toISOString(),
-              nome: body.nome, email: body.email, cpf: body.cpf, telefone: body.telefone,
-              cep: body.zipCode, cidade: body.cidade, uf: body.uf,
-              origem: [body.registrationOriginDetail, body.registrationOriginMedium, body.registrationOriginCampaign].filter(Boolean).join(" / "),
-              exportado_em: null, cadastrou_gera: false
-            });
-            gravar(lista);
-            return json({ ok: true });
-          }
-          case "/api/otp/gerar":
-            otpAtual = seisDigitos();
-            return json({ ok: true, message: "Código enviado (demonstração).", devCode: otpAtual });
-          case "/api/otp/validar":
-            return body.code === otpAtual
-              ? json({ ok: true })
-              : json({ ok: false, message: "Código inválido. Use o código mostrado na tela." }, 400);
-          case "/api/cadastro": {
-            cadastradosGera.add(body.cpf);
-            cadastradosGera.add(body.email);
-            gravar(ler().map((l) => (l.cpf === body.cpf ? { ...l, cadastrou_gera: true } : l)));
-            return json({
-              ok: true,
-              email: body.email,
-              codigo: seisDigitos(),
-              senha: `Locci@${Math.random().toString(36).slice(2, 8)}`,
-              message: "Cadastro criado no Gera (simulado). Guarde seu acesso."
-            });
-          }
-          default:
-            return json({ ok: false, message: "Rota não simulada." }, 404);
-        }
-      };
-
-      const render = () => {
-        const lista = ler();
-        const botao = document.getElementById("demo-bd-abrir");
-        const corpo = document.getElementById("demo-bd-linhas");
-        if (!botao || !corpo) return;
-        const novos = lista.filter((l) => !l.exportado_em).length;
-        botao.textContent = `BD Líder (demo) · ${lista.length}${novos ? ` (${novos} novo${novos > 1 ? "s" : ""})` : ""}`;
-        corpo.innerHTML = lista.length ? lista.map((l) => `
-          <tr>
-            <td>${esc(fmtData(l.criado_em))}</td><td>${esc(l.nome)}</td><td>${esc(l.email)}</td>
-            <td>${esc(fmtCpf(l.cpf))}</td><td>${esc(fmtTel(l.telefone))}</td><td>${esc(fmtCep(l.cep))}</td>
-            <td>${esc([l.cidade, l.uf].filter(Boolean).join("/") || "—")}</td><td>${esc(l.origem)}</td>
-            <td>${l.exportado_em ? `<span class="demo-tag demo-tag--exportado">${esc(fmtData(l.exportado_em))}</span>` : '<span class="demo-tag demo-tag--novo">Novo</span>'}</td>
-            <td>${l.cadastrou_gera ? '<span class="demo-tag demo-tag--gera">Completou</span>' : "—"}</td>
-          </tr>`).join("") : '<tr><td colspan="10">Nenhum pedido ainda. Preencha o formulário e escolha "Quero falar com a Líder".</td></tr>';
-      };
-
-      const baixarCsv = () => {
-        const lista = ler();
-        const novos = lista.filter((l) => !l.exportado_em && !l.cadastrou_gera);
-        if (!novos.length) { alert("Nenhuma linha nova para exportar."); return; }
-        const cab = ["data", "nome", "email", "cpf", "whatsapp", "cep", "cidade", "uf", "origem"];
-        const cel = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-        const linhas = novos.map((l) => [fmtData(l.criado_em), l.nome, l.email, fmtCpf(l.cpf), fmtTel(l.telefone), fmtCep(l.cep), l.cidade, l.uf, l.origem].map(cel).join(";"));
-        const blob = new Blob(["﻿" + [cab.join(";"), ...linhas].join("\r\n")], { type: "text/csv;charset=utf-8" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `leads-lider-${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        const agora = new Date().toISOString();
-        const ids = new Set(novos.map((l) => l.cpf));
-        gravar(lista.map((l) => (ids.has(l.cpf) ? { ...l, exportado_em: agora } : l)));
-      };
-
-      document.addEventListener("DOMContentLoaded", () => {
-        const painel = document.getElementById("demo-bd");
-        document.getElementById("demo-bd-abrir").addEventListener("click", () => { painel.hidden = !painel.hidden; });
-        document.getElementById("demo-bd-fechar").addEventListener("click", () => { painel.hidden = true; });
-        document.getElementById("demo-bd-csv").addEventListener("click", baixarCsv);
-        document.getElementById("demo-bd-limpar").addEventListener("click", () => gravar([]));
-        render();
-      });
-    })();
-  </script>
 
   <script>
     const io = new IntersectionObserver((entries) => {
@@ -2547,8 +2390,12 @@
     const titleEl = document.getElementById("lead-title");
     const introEl = document.getElementById("lead-intro");
     const otpInput = document.getElementById("lead-otp");
+    const escolhaOtpInput = document.getElementById("escolha-otp");
     const validarOtpBtn = document.getElementById("lead-validar-otp");
+    const validarEscolhaOtpBtn = document.getElementById("escolha-validar-otp");
     const reenviarOtpBtn = document.getElementById("lead-reenviar-otp");
+    const reenviarEscolhaOtpBtn = document.getElementById("escolha-reenviar-otp");
+    let emailOtpConfirmado = "";
     let recaptchaSiteKey = "";
     let escritorioUrl = "https://revendedor.loccitaneaubresil.com/";
     let payloadAtual = null;
@@ -2597,6 +2444,9 @@
     [emailInput, emailConfirmaInput].forEach((campo) => {
       campo.addEventListener("input", () => {
         emailConfirmaInput.setCustomValidity("");
+        if (campo === emailInput && emailOtpConfirmado && emailOtpConfirmado !== normalizarEmail(emailInput.value)) {
+          emailOtpConfirmado = "";
+        }
         if (emailMsg.textContent === MSG_EMAIL_EXISTE) {
           mostrarErroEmail("");
           sincronizarAvisoExistente();
@@ -2795,7 +2645,7 @@
     };
     const TEXTO_ESCOLHA = {
       titulo: "Como você quer seguir?",
-      intro: "Escolha uma das opções abaixo."
+      intro: "Confirme o código enviado ao seu e-mail e escolha uma opção."
     };
     const TEXTO_DADOS = {
       titulo: "Falta pouco",
@@ -2963,13 +2813,15 @@
 
     const iniciarCooldown = () => {
       let segundos = 60;
-      reenviarOtpBtn.disabled = true;
+      const botoes = [reenviarOtpBtn, reenviarEscolhaOtpBtn].filter(Boolean);
+      botoes.forEach((botao) => { botao.disabled = true; });
       const tick = () => {
-        reenviarOtpBtn.textContent = `Reenviar código (${segundos}s)`;
+        botoes.forEach((botao) => {
+          botao.textContent = segundos > 0 ? `Reenviar código (${segundos}s)` : "Reenviar código";
+          botao.disabled = segundos > 0;
+        });
         if (segundos <= 0) {
           window.clearInterval(cooldownReenvio);
-          reenviarOtpBtn.disabled = false;
-          reenviarOtpBtn.textContent = "Reenviar código";
           return;
         }
         segundos -= 1;
@@ -2996,16 +2848,52 @@
     };
 
     const mostrarDevCode = (devCode) => {
-      const caixa = document.getElementById("lead-otp-dev");
-      const valor = document.getElementById("lead-otp-dev-code");
-      if (!caixa || !valor) return;
-      if (devCode) {
-        valor.textContent = devCode;
-        caixa.hidden = false;
-      } else {
-        valor.textContent = "";
-        caixa.hidden = true;
+      [
+        ["lead-otp-dev", "lead-otp-dev-code"],
+        ["escolha-otp-dev", "escolha-otp-dev-code"]
+      ].forEach(([caixaId, valorId]) => {
+        const caixa = document.getElementById(caixaId);
+        const valor = document.getElementById(valorId);
+        if (!caixa || !valor) return;
+        if (devCode) {
+          valor.textContent = devCode;
+          caixa.hidden = false;
+        } else {
+          valor.textContent = "";
+          caixa.hidden = true;
+        }
+      });
+    };
+
+    const otpDaEscolhaConfirmado = () => emailOtpConfirmado && emailOtpConfirmado === normalizarEmail(emailInput.value);
+
+    const sincronizarOpcoesEscolha = () => {
+      const livre = otpDaEscolhaConfirmado();
+      const opcoes = document.getElementById("escolha-opcoes");
+      const nota = document.getElementById("escolha-otp-note");
+      if (opcoes) opcoes.classList.toggle("is-locked", !livre);
+      if (completarBtn) completarBtn.disabled = !livre;
+      if (liderBtn) liderBtn.disabled = !livre;
+      if (validarEscolhaOtpBtn) validarEscolhaOtpBtn.hidden = livre;
+      if (reenviarEscolhaOtpBtn) reenviarEscolhaOtpBtn.hidden = livre;
+      if (escolhaOtpInput) escolhaOtpInput.disabled = livre;
+      if (nota) {
+        nota.textContent = livre
+          ? "E-mail confirmado. Escolha como quer seguir."
+          : "Enviamos um código para o seu e-mail. Confirme para liberar as opções abaixo.";
       }
+    };
+
+    const validarCodigoOtp = async (codigo) => {
+      const { resposta, data } = await chamarApi("/api/otp/validar", {
+        email: payloadAtual.email,
+        code: soDigitos(codigo)
+      });
+      if (!resposta.ok || !data.ok) {
+        throw new Error(data.message || "Código inválido. Você pode reenviar ou voltar ao formulário.");
+      }
+      emailOtpConfirmado = payloadAtual.email;
+      return data;
     };
 
     const mostrarCodigo = (mensagem, devCode) => {
@@ -3104,8 +2992,28 @@
       if (alvo) alvo.textContent = texto;
     };
     const liberarEscolha = () => {
-      botoesEscolha.forEach((b) => { b.disabled = false; });
-      textosOriginais.forEach((texto, el) => { el.textContent = texto; });
+      continuarBtn.disabled = false;
+      continuarBtn.textContent = textosOriginais.get(continuarBtn);
+      liderTitulo.textContent = textosOriginais.get(liderTitulo);
+      sincronizarOpcoesEscolha();
+    };
+
+    const abrirEscolha = (enviado) => {
+      const primeiroNome = form.elements.nome.value.trim().split(/\s+/)[0];
+      irParaPasso("escolha", {
+        titulo: TEXTO_ESCOLHA.titulo,
+        intro: primeiroNome
+          ? `${primeiroNome}, confirme o código e escolha como seguir.`
+          : TEXTO_ESCOLHA.intro
+      });
+      if (enviado) {
+        rastrearUmaVez("form_otp_sent", { form_id: "cadastro_revendedora" });
+        mostrarDevCode(enviado.devCode);
+        mostrarStatus("success", enviado.message || "Código enviado. Confira sua caixa de entrada.");
+        escolhaOtpInput.value = "";
+        escolhaOtpInput.focus();
+      }
+      sincronizarOpcoesEscolha();
     };
 
     // Valida os 5 campos e consulta se CPF/e-mail já existem. Retorna true se pode seguir.
@@ -3133,18 +3041,31 @@
       travarEscolha(continuarBtn, "Consultando cadastro...");
       try {
         if (!(await validarInicio())) return;
-        const primeiroNome = form.elements.nome.value.trim().split(/\s+/)[0];
-        irParaPasso("escolha", {
-          titulo: TEXTO_ESCOLHA.titulo,
-          intro: primeiroNome ? `${primeiroNome}, escolha uma das opções abaixo.` : TEXTO_ESCOLHA.intro
-        });
-        liderBtn.focus({ preventScroll: true });
+        payloadAtual = {
+          ...montarPayloadLider(),
+          email: normalizarEmail(emailInput.value)
+        };
+        if (otpDaEscolhaConfirmado()) {
+          abrirEscolha();
+          return;
+        }
+        continuarBtn.textContent = "Enviando código...";
+        const enviado = await enviarCodigo();
+        if (cadastroJaExiste) return;
+        abrirEscolha(enviado);
+      } catch (erro) {
+        mostrarStatus("error", erro.message || "Não foi possível enviar o código.");
       } finally {
         liberarEscolha();
       }
     });
 
     completarBtn.addEventListener("click", () => {
+      if (!otpDaEscolhaConfirmado()) {
+        mostrarStatus("error", "Confirme o código enviado por e-mail antes de seguir.");
+        escolhaOtpInput.focus();
+        return;
+      }
       rastrear("form_choice", { form_id: "cadastro_revendedora", choice: "completar" });
       limparStatus();
       irParaPasso("dados", TEXTO_DADOS);
@@ -3152,6 +3073,11 @@
     });
 
     liderBtn.addEventListener("click", async () => {
+      if (!otpDaEscolhaConfirmado()) {
+        mostrarStatus("error", "Confirme o código enviado por e-mail antes de seguir.");
+        escolhaOtpInput.focus();
+        return;
+      }
       rastrear("form_choice", { form_id: "cadastro_revendedora", choice: "lider" });
       travarEscolha(liderTitulo, "Enviando...");
       try {
@@ -3166,6 +3092,7 @@
           return;
         }
         if (!resposta.ok || !data.ok) {
+          if (resposta.status === 403) emailOtpConfirmado = "";
           mostrarStatus("error", data.message || "Não foi possível enviar seus dados. Tente de novo.");
           return;
         }
@@ -3239,6 +3166,12 @@
           mostrarExistente("Já existe um cadastro com este CPF ou e-mail. Entre no Escritório Virtual.");
           return;
         }
+        if (otpDaEscolhaConfirmado()) {
+          submitBtn.textContent = "Criando cadastro...";
+          const captchaLead = await obterCaptcha("lead");
+          await concluirCadastro(captchaLead);
+          return;
+        }
         submitBtn.textContent = "Enviando código...";
         const enviado = await enviarCodigo();
         if (cadastroJaExiste) return;
@@ -3248,6 +3181,18 @@
         }
         mostrarCodigo(enviado.message, enviado.devCode);
       } catch (erro) {
+        if (/código enviado por e-mail/i.test(erro.message || "")) {
+          emailOtpConfirmado = "";
+          try {
+            submitBtn.textContent = "Enviando código...";
+            const enviado = await enviarCodigo();
+            mostrarCodigo(enviado.message, enviado.devCode);
+            return;
+          } catch (falhaEnvio) {
+            mostrarStatus("error", falhaEnvio.message || "Não foi possível enviar o código.");
+            return;
+          }
+        }
         mostrarStatus("error", erro.message || "Sem conexão com o servidor de cadastro. Abra a página em http://localhost:3000.");
       } finally {
         submitBtn.disabled = false;
@@ -3257,6 +3202,52 @@
 
     otpInput.addEventListener("input", () => {
       otpInput.value = soDigitos(otpInput.value).slice(0, 6);
+    });
+    escolhaOtpInput.addEventListener("input", () => {
+      escolhaOtpInput.value = soDigitos(escolhaOtpInput.value).slice(0, 6);
+    });
+
+    validarEscolhaOtpBtn.addEventListener("click", async () => {
+      if (!payloadAtual) return;
+      rastrear("click_otp", { otp_action: "confirm", link_text: "Confirmar código", link_location: "escolha" });
+      limparStatus();
+      if (soDigitos(escolhaOtpInput.value).length !== 6) {
+        mostrarStatus("error", "Digite o código de 6 dígitos enviado por e-mail.");
+        escolhaOtpInput.focus();
+        return;
+      }
+      validarEscolhaOtpBtn.disabled = true;
+      validarEscolhaOtpBtn.textContent = "Validando...";
+      try {
+        await validarCodigoOtp(escolhaOtpInput.value);
+        sincronizarOpcoesEscolha();
+        mostrarStatus("success", "E-mail confirmado. Escolha como quer seguir.");
+        liderBtn.focus();
+      } catch (erro) {
+        mostrarStatus("error", erro.message || "Não foi possível validar o código.");
+      } finally {
+        if (!otpDaEscolhaConfirmado()) {
+          validarEscolhaOtpBtn.disabled = false;
+          validarEscolhaOtpBtn.textContent = "Confirmar código";
+        }
+      }
+    });
+
+    reenviarEscolhaOtpBtn.addEventListener("click", async () => {
+      if (!payloadAtual) return;
+      rastrear("click_otp", { otp_action: "resend", link_text: "Reenviar código", link_location: "escolha" });
+      limparStatus();
+      reenviarEscolhaOtpBtn.disabled = true;
+      try {
+        const enviado = await enviarCodigo();
+        mostrarDevCode(enviado.devCode);
+        mostrarStatus("success", enviado.message || "Enviamos um código novo.");
+        escolhaOtpInput.focus();
+      } catch (erro) {
+        mostrarStatus("error", erro.message || "Não foi possível reenviar o código.");
+        reenviarEscolhaOtpBtn.disabled = false;
+        reenviarEscolhaOtpBtn.textContent = "Reenviar código";
+      }
     });
 
     validarOtpBtn.addEventListener("click", async () => {
@@ -3271,17 +3262,11 @@
       validarOtpBtn.disabled = true;
       validarOtpBtn.textContent = "Validando...";
       try {
-        const { resposta, data } = await chamarApi("/api/otp/validar", {
-          email: payloadAtual.email,
-          code: otpInput.value
-        });
-        if (!resposta.ok || !data.ok) {
-          mostrarStatus("error", data.message || "Código inválido. Você pode reenviar ou voltar ao formulário.");
-          return;
-        }
+        const data = await validarCodigoOtp(otpInput.value);
         validarOtpBtn.textContent = "Criando cadastro...";
         const captchaLead = await obterCaptcha("lead");
         await concluirCadastro(captchaLead);
+        if (data) sincronizarOpcoesEscolha();
       } catch (erro) {
         mostrarStatus("error", erro.message || "Não foi possível validar o código.");
       } finally {

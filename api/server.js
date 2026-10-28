@@ -1344,6 +1344,12 @@ app.post("/api/lider", async (req, res) => {
   if (validacao.erro) {
     return res.status(400).json({ ok: false, message: validacao.erro });
   }
+  if (!emailFoiVerificado(validacao.dados.email)) {
+    return res.status(403).json({
+      ok: false,
+      message: "Confirme o código enviado por e-mail antes de falar com a líder."
+    });
+  }
   if (!BASE_URL) {
     return res.status(503).json({
       ok: false,
