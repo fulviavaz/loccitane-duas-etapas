@@ -96,10 +96,31 @@ const extrairMensagem = (corpo) => {
   return "";
 };
 
+const mensagemIndicaDuplicado = (texto) => {
+  const t = String(texto || "").toLowerCase();
+  if (/n[aã]o existe|nao existe|not exist|does not exist|do not exist|doesn't exist|user not found|n[aã]o encontr/.test(t)) {
+    return false;
+  }
+  return /already registered|already exists|j[aá] cadastr|j[aá] existe|duplicad|em uso|already in use/.test(t);
+};
+
 const mensagemAmigavel = (bruta, status) => {
   const texto = String(bruta || "").toLowerCase();
-  if (/already|exist|duplicate|já cadastr|ja cadastr|em uso|already registered/.test(texto)) {
+  if (mensagemIndicaDuplicado(texto)) {
     return "Este CPF ou e-mail já está cadastrado. Tente entrar no Escritório Virtual.";
+  }
+  if (/devem ser preenchidos/.test(texto)) {
+    const itens = String(bruta || "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/TB_PESSOA_ENDERECO\.\S+/gi, "")
+      .split("\n")
+      .map((item) => item.replace(/\s+/g, " ").trim())
+      .filter((item) => item && !/seguintes campos|devem ser preenchidos/i.test(item));
+    const unicos = [...new Set(itens)];
+    if (unicos.length) return `A Gera pediu estes campos: ${unicos.join(", ")}.`;
+  }
+  if (/gender code|g[eê]nero/.test(texto)) {
+    return "Selecione o gênero para continuar.";
   }
   if (/cep|zip\s*code|zipcode|postal/.test(texto)) {
     return "Não encontramos esse CEP. Confira os números e tente de novo.";
@@ -123,11 +144,19 @@ const mensagemAmigavel = (bruta, status) => {
   if (/invalid_client/.test(texto)) {
     return "O client da API Gera foi recusado. Confira o clientId e o clientSecret.";
   }
+  if (/concurrency|updatecommand/.test(texto)) {
+    return "A Gera não respondeu agora. Espere um instante e tente de novo.";
+  }
+  if (/timeout|timed out|aborted/.test(texto)) {
+    return "A Gera demorou para gravar o cadastro. Espere um instante e tente de novo.";
+  }
   if (/unauthor|authent|credential|access.?token|bearer/.test(texto) || status === 401) {
     return "Não foi possível conectar à API agora. Tente de novo em instantes.";
   }
   if (status >= 500) {
-    return "A API está indisponível no momento. Tente de novo em instantes.";
+    return bruta && bruta.length < 180
+      ? bruta
+      : "A API está indisponível no momento. Tente de novo em instantes.";
   }
   return bruta && bruta.length < 180
     ? bruta
@@ -206,11 +235,27 @@ const validarPayloadInicio = (body) => {
   const cpf = soDigitos(body.cpf);
   const telefone = soDigitos(body.telefone);
   const zipCode = soDigitos(body.zipCode || body.cep);
+  const gender = Number(body.gender);
+  const addressNumber = String(body.addressNumber || "").trim();
+  const birthday = String(body.birthday || "").trim();
+  const rua = String(body.rua || body.logradouro || "").trim();
+  const bairro = String(body.bairro || "").trim();
+  const cidade = String(body.cidade || "").trim();
+  const uf = String(body.uf || "").trim().toUpperCase();
   if (!nome) return { erro: "Informe o nome completo." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { erro: "Informe um e-mail válido." };
   if (cpf.length !== 11) return { erro: "Informe um CPF válido." };
   if (telefone.length < 10 || telefone.length > 11) return { erro: "Informe um WhatsApp válido." };
   if (zipCode.length !== 8) return { erro: "Informe um CEP válido." };
+  if (![1, 2, 3].includes(gender)) return { erro: "Selecione o gênero." };
+  if (!addressNumber) return { erro: "Informe o número do endereço." };
+  if (!birthday) return { erro: "Informe a data de nascimento." };
+  const nascimento = new Date(birthday);
+  if (Number.isNaN(nascimento.getTime())) return { erro: "Informe uma data de nascimento válida." };
+  const hoje = new Date();
+  const idade = hoje.getFullYear() - nascimento.getFullYear()
+    - (hoje < new Date(hoje.getFullYear(), nascimento.getMonth(), nascimento.getDate()) ? 1 : 0);
+  if (idade < 18) return { erro: "O cadastro é para pessoas com 18 anos ou mais." };
   return {
     dados: {
       nome,
@@ -218,11 +263,76 @@ const validarPayloadInicio = (body) => {
       cpf,
       telefone,
       zipCode,
+      gender,
+      addressNumber,
+      birthday: nascimento.toISOString(),
+      rua,
+      bairro,
+      cidade,
+      uf,
       registrationOriginDetail: String(body.registrationOriginDetail || body.utm_source || "").trim(),
       registrationOriginMedium: String(body.registrationOriginMedium || body.utm_medium || "").trim(),
       registrationOriginCampaign: String(body.registrationOriginCampaign || body.utm_campaign || "").trim()
     }
   };
+};
+
+const validarContato = (body) => {
+  const nome = String(body.nome || "").trim();
+  const email = String(body.email || "").trim().toLowerCase();
+  const cpf = soDigitos(body.cpf);
+  const telefone = soDigitos(body.telefone);
+  const zipCode = soDigitos(body.zipCode || body.cep);
+  const rua = String(body.rua || body.logradouro || "").trim();
+  const bairro = String(body.bairro || "").trim();
+  const cidade = String(body.cidade || "").trim();
+  const uf = String(body.uf || "").trim().toUpperCase();
+  const complemento = String(body.complemento || "").trim();
+  if (!nome) return { erro: "Informe o nome." };
+  if (cpf.length !== 11) return { erro: "Informe um CPF válido." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { erro: "Informe um e-mail válido." };
+  if (zipCode.length !== 8) return { erro: "Informe um CEP válido." };
+  if (!cidade || uf.length !== 2) return { erro: "Não encontramos o endereço desse CEP. Confira os números." };
+  if (telefone.length < 10 || telefone.length > 11) return { erro: "Informe um telefone com DDD." };
+  return {
+    dados: {
+      nome,
+      email,
+      cpf,
+      telefone,
+      zipCode,
+      rua,
+      bairro,
+      cidade,
+      uf,
+      complemento,
+      acceptTerms: true,
+      registrationOriginDetail: String(body.registrationOriginDetail || body.utm_source || "").trim(),
+      registrationOriginMedium: String(body.registrationOriginMedium || body.utm_medium || "").trim(),
+      registrationOriginCampaign: String(body.registrationOriginCampaign || body.utm_campaign || "").trim()
+    }
+  };
+};
+
+const CONTATOS_PATH = path.join(__dirname, "data", "contatos.json");
+let filaContatos = Promise.resolve();
+
+const gravarContatoLocal = (registro) => {
+  const tarefa = filaContatos.then(async () => {
+    await fs.promises.mkdir(path.dirname(CONTATOS_PATH), { recursive: true });
+    let lista = [];
+    try {
+      const texto = await fs.promises.readFile(CONTATOS_PATH, "utf8");
+      const parsed = JSON.parse(texto);
+      if (Array.isArray(parsed)) lista = parsed;
+    } catch (erro) {
+      if (erro.code !== "ENOENT") throw erro;
+    }
+    lista.push(registro);
+    await fs.promises.writeFile(CONTATOS_PATH, JSON.stringify(lista, null, 2));
+  });
+  filaContatos = tarefa.catch(() => {});
+  return tarefa;
 };
 
 const origemDaUrl = (valor) => {
@@ -260,11 +370,9 @@ const completarOrigemCadastro = (dados, req) => {
   };
 };
 
-const obterToken = async () => {
-  if (tokenCache.token && Date.now() < tokenCache.expiresAt - 30_000) {
-    return tokenCache.token;
-  }
+let tokenEmAndamento = null;
 
+const pedirTokenUmaVez = async () => {
   const resposta = await fetch(joinUrl(BASE_URL, TOKEN_PATH), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -289,6 +397,33 @@ const obterToken = async () => {
   tokenCache.token = token;
   tokenCache.expiresAt = Date.now() + Number(corpo.expires_in || 3600) * 1000;
   return token;
+};
+
+const obterToken = async () => {
+  if (tokenCache.token && Date.now() < tokenCache.expiresAt - 30_000) {
+    return tokenCache.token;
+  }
+  if (tokenEmAndamento) return tokenEmAndamento;
+
+  tokenEmAndamento = (async () => {
+    let ultimoErro;
+    for (let tentativa = 1; tentativa <= 4; tentativa += 1) {
+      try {
+        return await pedirTokenUmaVez();
+      } catch (erro) {
+        ultimoErro = erro;
+        const transitivo = /concurrency|updatecommand/i.test(String(erro.message || ""));
+        if (!transitivo || tentativa === 4) throw erro;
+        console.warn("[token] tentativa", tentativa, "recusada pela Gera, repetindo");
+        await new Promise((resolver) => setTimeout(resolver, 500 * tentativa));
+      }
+    }
+    throw ultimoErro;
+  })().finally(() => {
+    tokenEmAndamento = null;
+  });
+
+  return tokenEmAndamento;
 };
 
 const normalizarTexto = (valor) => String(valor || "")
@@ -359,13 +494,18 @@ const gerarSenhaAleatoria = () => {
   return `${SENHA_PREFIXO}${sufixo.join("")}`;
 };
 
+const birthdayGera = (valor) => {
+  const match = String(valor || "").match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : String(valor || "");
+};
+
 const cadastrarRevendedor = async (token, dados, geographicStructureCode) => {
   const campos = {
     name: dados.nome,
     mainDocument: dados.cpf,
     mainDocumentTypeId: DOCUMENT_TYPE_CPF,
     email: dados.email,
-    birthday: dados.birthday,
+    birthday: birthdayGera(dados.birthday),
     gender: String(dados.gender),
     zipCode: dados.zipCode,
     addressNumber: dados.addressNumber,
@@ -394,7 +534,8 @@ const cadastrarRevendedor = async (token, dados, geographicStructureCode) => {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: new URLSearchParams(campos)
+    body: new URLSearchParams(campos),
+    signal: AbortSignal.timeout(120000)
   });
 
   const corpo = await lerJsonSeguro(resposta);
@@ -407,22 +548,31 @@ const cadastrarRevendedorInicio = async (token, dados, geographicStructureCode) 
     mainDocument: dados.cpf,
     mainDocumentTypeId: DOCUMENT_TYPE_CPF,
     email: dados.email,
+    birthday: birthdayGera(dados.birthday),
     zipCode: dados.zipCode,
+    addressNumber: dados.addressNumber,
     mobilePhone: dados.telefone,
+    gender: String(dados.gender),
     indicatorCode: INDICATOR_CODE
   };
+  if (dados.uf) campos.addressLevel1 = dados.uf;
+  if (dados.cidade) campos.addressLevel2 = dados.cidade;
+  if (dados.bairro) campos.addressLevel3 = dados.bairro;
+  if (dados.rua) campos.addressLevel4 = dados.rua;
   if (geographicStructureCode) campos.geographicStructureCode = geographicStructureCode;
   if (REGISTRATION_ORIGIN) campos.registrationOrigin = REGISTRATION_ORIGIN;
   if (dados.registrationOriginDetail) campos.registrationOriginDetail = dados.registrationOriginDetail;
   if (dados.registrationOriginMedium) campos.registrationOriginMedium = dados.registrationOriginMedium;
   if (dados.registrationOriginCampaign) campos.registrationOriginCampaign = dados.registrationOriginCampaign;
+  console.log("[lider] POST", SELLERS_PATH);
   const resposta = await fetch(joinUrl(BASE_URL, SELLERS_PATH), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: new URLSearchParams(campos)
+    body: new URLSearchParams(campos),
+    signal: AbortSignal.timeout(120000)
   });
   const corpo = await lerJsonSeguro(resposta);
   return { resposta, corpo };
@@ -606,7 +756,8 @@ const caminhosLookup = (tipo) => LOOKUP_PATHS.filter((modelo) => (
 const buscarRegistro = async (token, caminho, consulta = {}) => {
   try {
     const resposta = await fetch(joinUrl(BASE_URL, caminho), {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000)
     });
     const corpo = await lerJsonSeguro(resposta);
     const texto = extrairMensagem(corpo);
@@ -642,13 +793,19 @@ const consultarExistencia = async (token, { cpf, email }) => {
   const tentar = async (tipo, valor) => {
     if (!valor) return;
     let achou = false;
+    let publicoOk = false;
     const consulta = tipo === "cpf" ? { cpf: valor } : { email: valor };
     for (const modelo of caminhosLookup(tipo)) {
       const caminho = modelo
         .replace("{cpf}", encodeURIComponent(tipo === "cpf" ? valor : ""))
         .replace("{email}", encodeURIComponent(tipo === "email" ? valor : ""));
+      const lento = /\/api\/(?:people|sellers)\b/i.test(caminho) && !/\/api\/public\//i.test(caminho);
+      if (publicoOk && lento) continue;
       const resultado = await buscarRegistro(token, caminho, consulta);
-      if (resultado.ok) consultaOk = true;
+      if (resultado.ok) {
+        consultaOk = true;
+        if (/\/api\/public\//i.test(caminho)) publicoOk = true;
+      }
       if (resultado.encontrado) {
         achou = true;
         break;
@@ -1218,31 +1375,7 @@ app.post("/api/verificar", async (req, res) => {
   if (cpf && !cpfOk) {
     return res.status(400).json({ ok: false, message: "Informe um CPF válido." });
   }
-  if (!BASE_URL) {
-    return res.status(503).json({ ok: false, message: "A URL da API Gera ainda não foi configurada." });
-  }
-  try {
-    const token = await obterToken();
-    const consulta = await consultarExistencia(token, {
-      cpf: cpfOk ? cpf : "",
-      email: emailOk ? email : ""
-    });
-    if (consulta.existe && !inicioGravadoNestaSessao(cpfOk ? cpf : "", emailOk ? email : "")) {
-      return res.json({
-        ok: false,
-        existe: true,
-        campo: consulta.campo,
-        campos: consulta.campos,
-        message: `Já existe um cadastro com este ${consulta.campo}. Entre no Escritório Virtual.`
-      });
-    }
-    return res.json({ ok: true, existe: false, campos: [] });
-  } catch (erro) {
-    return res.status(502).json({
-      ok: false,
-      message: mensagemAmigavel(erro.message, erro.status || 502)
-    });
-  }
+  return res.json({ ok: true, existe: false, campos: [] });
 });
 
 app.post("/api/otp/gerar", async (req, res) => {
@@ -1336,6 +1469,32 @@ app.post("/api/otp/validar", async (req, res) => {
   }
 });
 
+app.post("/api/contato", async (req, res) => {
+  const validacao = validarContato(req.body || {});
+  if (validacao.erro) {
+    return res.status(400).json({ ok: false, message: validacao.erro });
+  }
+  const captchaToken = String(req.body?.captcha_token || "").trim();
+  try {
+    await enviarLeadIndico(req, validacao.dados, captchaToken, {
+      landing_page_url: String(req.body?.landing_page_url || "").trim(),
+      referrer: String(req.body?.referrer || "").trim(),
+      utm_source: req.body?.utm_source,
+      utm_medium: req.body?.utm_medium,
+      utm_campaign: req.body?.utm_campaign,
+      utm_term: req.body?.utm_term,
+      utm_content: req.body?.utm_content
+    });
+    return res.status(202).json({ ok: true, message: "Dados recebidos." });
+  } catch (erro) {
+    console.error("[contato]", erro.message);
+    return res.status(erro.status || 502).json({
+      ok: false,
+      message: erro.message || "Não foi possível gravar no banco."
+    });
+  }
+});
+
 app.post("/api/lead", async (req, res) => {
   const validacao = validarPayload(req.body || {});
   if (validacao.erro) {
@@ -1425,7 +1584,8 @@ app.post("/api/lider", async (req, res) => {
     console.log("[lider] retorno Gera", resposta.status, chaves);
     if (!resposta.ok) {
       const bruta = extrairMensagem(corpo);
-      const existe = /already|exist|duplicate|já cadastr|ja cadastr|em uso/i.test(bruta);
+      console.log("[lider] recusa", resposta.status, String(bruta).slice(0, 180));
+      const existe = mensagemIndicaDuplicado(bruta);
       return res.status(existe ? 409 : (resposta.status === 401 ? 502 : resposta.status)).json({
         ok: false,
         existe,
@@ -1442,6 +1602,7 @@ app.post("/api/lider", async (req, res) => {
       message: "Recebemos seus dados. Uma líder da sua região vai falar com você pelo WhatsApp."
     });
   } catch (erro) {
+    console.log("[lider] falha", String(erro.message || erro).slice(0, 180), erro.cause?.code || "");
     return res.status(502).json({
       ok: false,
       message: mensagemAmigavel(erro.message, erro.status || 502)
@@ -1511,7 +1672,7 @@ app.post("/api/cadastro", async (req, res) => {
     );
     if (!resposta.ok) {
       const bruta = extrairMensagem(corpo);
-      const existe = /already|exist|duplicate|já cadastr|ja cadastr|em uso/i.test(bruta);
+      const existe = mensagemIndicaDuplicado(bruta);
       const complementoRecusado = existe && inicioAnterior;
       return res.status(existe ? 409 : (resposta.status === 401 ? 502 : resposta.status)).json({
         ok: false,

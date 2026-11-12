@@ -781,7 +781,24 @@
     .form[data-step="dados"] .form__step--dados,
     .form[data-step="existe"] .form__step--existe,
     .form[data-step="codigo"] .form__step--codigo,
-    .form[data-step="sucesso"] .form__step--sucesso { display: block; }
+    .form[data-step="sucesso"] .form__step--sucesso,
+    .form[data-step="mensagem"] .form__step--mensagem { display: block; }
+    .form__endereco {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 0.75rem 0.9rem;
+      border-radius: 12px;
+      background: #fff6f0;
+      color: #5c463c;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .form__mensagem {
+      margin: 0.2rem 0 0;
+      font-size: 1.05rem;
+      line-height: 1.55;
+      color: #5c463c;
+    }
     .form__actions {
       display: grid;
       gap: 0.65rem;
@@ -1712,27 +1729,28 @@
         <form class="form reveal" id="lead-form" data-step="inicio" novalidate>
           <span class="form__tag">Inscrições abertas</span>
           <h3 class="script" id="lead-title">Cadastro grátis</h3>
-          <p id="lead-intro">Comece com 5 informações rápidas.</p>
+          <p id="lead-intro">Preencha seus dados. A líder entra em contato com você.</p>
           <div class="form__status" id="lead-status" role="status" aria-live="polite"></div>
 
           <div class="form__step form__step--inicio">
             <div class="form__grid">
-              <label class="full">Nome completo
+              <label class="full">Nome
                 <input type="text" name="nome" required autocomplete="name" placeholder="Seu nome" />
-              </label>
-              <label class="full">E-mail
-                <input id="lead-email" type="email" name="email" required autocomplete="email" placeholder="voce@email.com" aria-describedby="lead-email-msg" />
-                <span class="form__field-msg" id="lead-email-msg" role="alert"></span>
               </label>
               <label>CPF
                 <input id="lead-cpf" type="text" name="cpf" required inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" aria-describedby="lead-cpf-msg" />
                 <span class="form__field-msg" id="lead-cpf-msg" role="alert"></span>
               </label>
-              <label>WhatsApp
-                <input id="lead-telefone" type="tel" name="telefone" required autocomplete="tel" maxlength="16" placeholder="(11) 99999-9999" />
+              <label>E-mail
+                <input id="lead-email" type="email" name="email" required autocomplete="email" placeholder="voce@email.com" aria-describedby="lead-email-msg" />
+                <span class="form__field-msg" id="lead-email-msg" role="alert"></span>
               </label>
               <label class="full">CEP
                 <input id="lead-cep" type="text" name="cep" required inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000" />
+              </label>
+              <p class="form__endereco" id="lead-endereco" hidden></p>
+              <label class="full">Telefone
+                <input id="lead-telefone" type="tel" name="telefone" required autocomplete="tel" maxlength="16" placeholder="(11) 99999-9999" />
               </label>
             </div>
             <div class="form__aviso" id="lead-existe-aviso" hidden>
@@ -1741,53 +1759,50 @@
               <a class="btn js-escritorio" id="lead-ir-gera" href="https://revendedor.loccitaneaubresil.com/" target="_blank" rel="noopener">Entrar no Escritório Virtual</a>
             </div>
             <button class="btn" id="lead-continuar" type="button">Continuar</button>
-            <p class="form__note">Validamos e-mail e CPF antes de seguir.</p>
           </div>
 
+          <div class="form__step form__step--mensagem">
+            <p class="form__mensagem">Em breve, nossa líder L’Occitane au Brésil entrará em contato para guiar seus próximos passos e oferecer todo o suporte na sua primeira compra. Conte com a gente nessa nova jornada!</p>
+          </div>
+          <input id="lead-nascimento" type="hidden" name="nascimento" value="" />
+          <input id="lead-numero" type="hidden" name="numero" value="" />
+          <input id="lead-genero" type="hidden" name="genero" value="" />
+
           <div class="form__step form__step--escolha">
-            <div class="form__otp-dev" id="escolha-otp-dev" hidden>
-              O e-mail da Indico pode atrasar. Em teste, use este código:
-              <strong id="escolha-otp-dev-code"></strong>
-            </div>
-            <label class="full">Código de 6 dígitos
-              <input id="escolha-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-describedby="escolha-otp-note" />
-            </label>
-            <div class="form__actions">
-              <button class="btn" id="escolha-validar-otp" type="button">Confirmar código</button>
-              <button class="btn btn--ghost" id="escolha-reenviar-otp" type="button">Reenviar código</button>
-            </div>
-            <p class="form__note" id="escolha-otp-note">Enviamos um código para o seu e-mail. Confirme para liberar as opções abaixo.</p>
-            <div class="form__opcoes is-locked" id="escolha-opcoes">
-              <button class="form__opcao" id="lead-falar-lider" type="button" disabled>
+            <div class="form__opcoes" id="escolha-opcoes">
+              <button class="form__opcao" id="lead-falar-lider" type="button">
                 <strong>Quero falar com a Líder</strong>
                 <span>Uma líder da sua região chama você no WhatsApp, tira suas dúvidas e ajuda a começar.</span>
               </button>
-              <button class="form__opcao" id="lead-completar" type="button" disabled>
+              <button class="form__opcao" id="lead-completar" type="button">
                 <strong>Completar e finalizar cadastro</strong>
                 <span>Mais 1 minuto: endereço de entrega e seu acesso ao Escritório Virtual.</span>
               </button>
             </div>
+            <div id="escolha-otp-box" hidden>
+              <div class="form__otp-dev" id="escolha-otp-dev" hidden>
+                O e-mail da Indico pode atrasar. Em teste, use este código:
+                <strong id="escolha-otp-dev-code"></strong>
+              </div>
+              <label class="full">Código de 6 dígitos
+                <input id="escolha-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-describedby="escolha-otp-note" />
+              </label>
+              <div class="form__actions">
+                <button class="btn" id="escolha-validar-otp" type="button">Confirmar código</button>
+                <button class="btn btn--ghost" id="escolha-reenviar-otp" type="button">Reenviar código</button>
+              </div>
+              <p class="form__note" id="escolha-otp-note">Enviamos um código para o seu e-mail. Confirme para seguir com a opção escolhida.</p>
+            </div>
             <div class="form__actions">
               <button class="btn btn--ghost" id="lead-voltar-escolha" type="button">Voltar</button>
             </div>
-            <p class="form__note">Ao escolher <strong>Quero falar com a Líder</strong>, seus dados são enviados à L'Occitane au Brésil para que uma líder da sua região fale com você pelo WhatsApp.</p>
+            <p class="form__note">O código chega no seu e-mail quando você escolhe uma opção. Em <strong>Quero falar com a Líder</strong>, depois da confirmação seus dados vão para a L'Occitane au Brésil.</p>
           </div>
 
           <div class="form__step form__step--dados">
             <div class="form__grid">
               <label class="full">Confirme o e-mail
                 <input id="lead-email-confirma" type="email" name="email_confirmacao" required autocomplete="off" spellcheck="false" placeholder="Digite o e-mail de novo, sem colar" />
-              </label>
-              <label>Data de nascimento
-                <input id="lead-nascimento" type="date" name="nascimento" required autocomplete="bday" />
-              </label>
-              <label>Gênero
-                <select id="lead-genero" name="genero" required>
-                  <option value="">Selecione</option>
-                  <option value="1">Feminino</option>
-                  <option value="2">Masculino</option>
-                  <option value="3">Prefiro não informar</option>
-                </select>
               </label>
               <p class="form__sep">Endereço de entrega</p>
               <label for="lead-uf">UF
@@ -1824,9 +1839,6 @@
               </label>
               <label class="full">Logradouro
                 <input id="lead-logradouro" type="text" name="logradouro" required autocomplete="address-line1" placeholder="Rua, avenida ou travessa" />
-              </label>
-              <label>Número
-                <input id="lead-numero" type="text" name="numero" required inputmode="numeric" autocomplete="address-line2" placeholder="123" />
               </label>
               <label><span>Complemento <em>(opcional)</em></span>
                 <input id="lead-complemento" type="text" name="complemento" autocomplete="address-line3" placeholder="Apto, bloco, casa" />
@@ -2455,16 +2467,8 @@
       });
       campo.addEventListener("blur", validarEmails);
     });
-    emailConfirmaInput.addEventListener("blur", async () => {
+    emailConfirmaInput.addEventListener("blur", () => {
       validarEmails();
-      if (!emailInput.checkValidity() || !emailConfirmaInput.value) return;
-      if (normalizarEmail(emailInput.value) !== normalizarEmail(emailConfirmaInput.value)) return;
-      await consultarExistenciaCampo({ email: normalizarEmail(emailInput.value) });
-    });
-
-    emailInput.addEventListener("blur", async () => {
-      if (!emailInput.value || !emailInput.checkValidity()) return;
-      await consultarExistenciaCampo({ email: normalizarEmail(emailInput.value) });
     });
 
     const bloquearAtalho = (event, tecla) => {
@@ -2575,9 +2579,8 @@
       mostrarErroCpf("");
       sincronizarAvisoExistente();
     });
-    cpfInput.addEventListener("blur", async () => {
-      if (!validarCpf()) return;
-      await consultarExistenciaCampo({ cpf: soDigitos(cpfInput.value) });
+    cpfInput.addEventListener("blur", () => {
+      validarCpf();
     });
 
     telefoneInput.addEventListener("input", () => {
@@ -2586,6 +2589,26 @@
 
     nascimentoInput.addEventListener("change", validarNascimento);
     nascimentoInput.addEventListener("blur", validarNascimento);
+
+    const enderecoEl = document.getElementById("lead-endereco");
+    const limparEndereco = () => {
+      logradouroInput.value = "";
+      bairroInput.value = "";
+      cidadeInput.value = "";
+      ufInput.value = "";
+      if (complementoInput) complementoInput.value = "";
+      if (enderecoEl) {
+        enderecoEl.hidden = true;
+        enderecoEl.textContent = "";
+      }
+    };
+    const mostrarEndereco = () => {
+      if (!enderecoEl) return;
+      const cidadeUf = [cidadeInput.value.trim(), ufInput.value.trim()].filter(Boolean).join(" - ");
+      const partes = [logradouroInput.value.trim(), bairroInput.value.trim(), cidadeUf].filter(Boolean);
+      enderecoEl.hidden = partes.length === 0;
+      enderecoEl.textContent = partes.join(", ");
+    };
 
     let cepNaoEncontrado = false;
     let ultimoCepBuscado = "";
@@ -2612,6 +2635,7 @@
         const dados = await resposta.json();
         cepNaoEncontrado = Boolean(dados.erro);
         if (cepNaoEncontrado) {
+          limparEndereco();
           validarCep();
           cepInput.reportValidity();
           return;
@@ -2620,8 +2644,9 @@
         if (dados.bairro) bairroInput.value = dados.bairro;
         if (dados.localidade) cidadeInput.value = dados.localidade;
         if (dados.uf) ufInput.value = dados.uf;
+        if (dados.complemento && complementoInput) complementoInput.value = dados.complemento;
         validarCep();
-        if (!numeroInput.value && form.dataset.step === "dados") numeroInput.focus({ preventScroll: true });
+        mostrarEndereco();
       } catch {
         cepNaoEncontrado = false;
         ultimoCepBuscado = "";
@@ -2633,6 +2658,10 @@
       cepInput.value = mascararCep(cepInput.value);
       cepNaoEncontrado = false;
       cepInput.setCustomValidity("");
+      if (soDigitos(cepInput.value).length < 8) {
+        ultimoCepBuscado = "";
+        limparEndereco();
+      }
       if (soDigitos(cepInput.value).length === 8) buscarCep();
     });
     cepInput.addEventListener("blur", () => {
@@ -2642,11 +2671,11 @@
 
     const TEXTO_INICIO = {
       titulo: "Cadastro grátis",
-      intro: "Comece com 5 informações rápidas."
+      intro: "Preencha seus dados. A líder entra em contato com você."
     };
     const TEXTO_ESCOLHA = {
       titulo: "Como você quer seguir?",
-      intro: "Confirme o código enviado ao seu e-mail e escolha uma opção."
+      intro: "Escolha falar com uma líder ou completar o cadastro. O código chega no e-mail depois dessa escolha."
     };
     const TEXTO_DADOS = {
       titulo: "Falta pouco",
@@ -2709,7 +2738,14 @@
       email: normalizarEmail(emailInput.value),
       cpf: soDigitos(cpfInput.value),
       telefone: soDigitos(telefoneInput.value),
+      birthday: nascimentoInput.value
+        ? new Date(`${nascimentoInput.value}T00:00:00`).toISOString()
+        : "",
       zipCode: soDigitos(cepInput.value),
+      addressNumber: numeroInput.value.trim(),
+      gender: Number(form.elements.genero.value),
+      rua: logradouroInput.value.trim(),
+      bairro: bairroInput.value.trim(),
       cidade: cidadeInput.value.trim(),
       uf: ufInput.value.trim().toUpperCase(),
       ...origemCadastro()
@@ -2812,14 +2848,30 @@
       if (lista.includes("CPF")) mostrarErroCpf(MSG_CPF_EXISTE, { nativo: true });
     };
 
+    const limparAcusacaoExistente = () => {
+      if (emailMsg.textContent === MSG_EMAIL_EXISTE) mostrarErroEmail("");
+      if (cpfMsg.textContent === MSG_CPF_EXISTE) mostrarErroCpf("");
+      cadastroJaExiste = false;
+      const aviso = document.getElementById("lead-existe-aviso");
+      if (aviso) aviso.hidden = true;
+    };
+
+    const consultaAindaVale = (body) => {
+      if (body.email && body.email !== normalizarEmail(emailInput.value)) return false;
+      if (body.cpf && body.cpf !== soDigitos(cpfInput.value)) return false;
+      return true;
+    };
+
     const consultarExistenciaCampo = async (body) => {
       try {
         const { resposta, data } = await chamarApi("/api/verificar", body);
+        if (!consultaAindaVale(body)) return { existe: false, ignorada: true };
         if (data.existe) {
           if (inicioDaSessao(body)) return { existe: false, inicio: true };
           mostrarExistente(data.message, data.campos);
           return data;
         }
+        limparAcusacaoExistente();
         if (!resposta.ok || data.ok === false) {
           return { existe: false, falhou: true, message: data.message };
         }
@@ -2898,32 +2950,38 @@
     };
 
     const otpDaEscolhaConfirmado = () => emailOtpConfirmado && emailOtpConfirmado === normalizarEmail(emailInput.value);
+    let intencaoEscolha = "";
 
     const sincronizarOpcoesEscolha = () => {
       const livre = otpDaEscolhaConfirmado();
       const opcoes = document.getElementById("escolha-opcoes");
+      const caixa = document.getElementById("escolha-otp-box");
+      if (opcoes) opcoes.classList.remove("is-locked");
+      if (completarBtn) completarBtn.disabled = false;
+      if (liderBtn) liderBtn.disabled = false;
+      if (caixa && livre) caixa.hidden = true;
+      if (validarEscolhaOtpBtn && !livre) {
+        validarEscolhaOtpBtn.disabled = false;
+        validarEscolhaOtpBtn.textContent = "Confirmar código";
+      }
+    };
+
+    const mostrarOtpEscolha = (enviado) => {
+      const caixa = document.getElementById("escolha-otp-box");
       const nota = document.getElementById("escolha-otp-note");
-      if (opcoes) opcoes.classList.toggle("is-locked", !livre);
-      if (completarBtn) completarBtn.disabled = !livre;
-      if (liderBtn) liderBtn.disabled = !livre;
-      if (validarEscolhaOtpBtn) {
-        validarEscolhaOtpBtn.hidden = livre;
-        validarEscolhaOtpBtn.disabled = livre;
-        if (!livre) validarEscolhaOtpBtn.textContent = "Confirmar código";
-      }
-      if (reenviarEscolhaOtpBtn) reenviarEscolhaOtpBtn.hidden = livre;
-      if (escolhaOtpInput) {
-        escolhaOtpInput.disabled = livre;
-        const rotulo = escolhaOtpInput.closest("label");
-        if (rotulo) rotulo.hidden = livre;
-      }
-      const acoesOtp = validarEscolhaOtpBtn?.closest(".form__actions");
-      if (acoesOtp) acoesOtp.hidden = livre;
+      if (caixa) caixa.hidden = false;
       if (nota) {
-        nota.textContent = livre
-          ? "E-mail confirmado. Escolha como quer seguir."
-          : "Enviamos um código para o seu e-mail. Confirme para liberar as opções abaixo.";
+        nota.textContent = intencaoEscolha === "lider"
+          ? "Enviamos um código para o seu e-mail. Confirme para falar com a líder."
+          : "Enviamos um código para o seu e-mail. Confirme para completar o cadastro.";
       }
+      if (!enviado) return;
+      rastrearUmaVez("form_otp_sent", { form_id: "cadastro_revendedora" });
+      mostrarDevCode(enviado.devCode);
+      mostrarStatus("success", enviado.message || "Código enviado. Confira sua caixa de entrada.");
+      escolhaOtpInput.value = "";
+      escolhaOtpInput.disabled = false;
+      escolhaOtpInput.focus();
     };
 
     const validarCodigoOtp = async (codigo) => {
@@ -3028,8 +3086,13 @@
     const completarBtn = document.getElementById("lead-completar");
     const liderBtn = document.getElementById("lead-falar-lider");
     const liderTitulo = liderBtn.querySelector("strong");
+    const completarTitulo = completarBtn.querySelector("strong");
     const botoesEscolha = [continuarBtn, completarBtn, liderBtn];
-    const textosOriginais = new Map([[continuarBtn, continuarBtn.textContent], [liderTitulo, liderTitulo.textContent]]);
+    const textosOriginais = new Map([
+      [continuarBtn, continuarBtn.textContent],
+      [liderTitulo, liderTitulo.textContent],
+      [completarTitulo, completarTitulo.textContent]
+    ]);
     const travarEscolha = (alvo, texto) => {
       botoesEscolha.forEach((b) => { b.disabled = true; });
       if (alvo) alvo.textContent = texto;
@@ -3038,99 +3101,41 @@
       continuarBtn.disabled = false;
       continuarBtn.textContent = textosOriginais.get(continuarBtn);
       liderTitulo.textContent = textosOriginais.get(liderTitulo);
+      completarTitulo.textContent = textosOriginais.get(completarTitulo);
       sincronizarOpcoesEscolha();
     };
 
-    const abrirEscolha = (enviado) => {
+    const abrirEscolha = () => {
       const primeiroNome = form.elements.nome.value.trim().split(/\s+/)[0];
       irParaPasso("escolha", {
         titulo: TEXTO_ESCOLHA.titulo,
         intro: primeiroNome
-          ? `${primeiroNome}, confirme o código e escolha como seguir.`
+          ? `${primeiroNome}, escolha como quer seguir.`
           : TEXTO_ESCOLHA.intro
       });
-      if (enviado) {
-        rastrearUmaVez("form_otp_sent", { form_id: "cadastro_revendedora" });
-        mostrarDevCode(enviado.devCode);
-        mostrarStatus("success", enviado.message || "Código enviado. Confira sua caixa de entrada.");
-        escolhaOtpInput.value = "";
-        escolhaOtpInput.focus();
-      }
+      const caixa = document.getElementById("escolha-otp-box");
+      if (caixa) caixa.hidden = true;
+      intencaoEscolha = "";
       sincronizarOpcoesEscolha();
     };
 
-    // Valida os 5 campos e consulta se CPF/e-mail já existem. Retorna true se pode seguir.
-    const validarInicio = async () => {
-      limparStatus();
-      validarCpf({ exigirPreenchido: true });
-      validarCep();
-      if (!inicioDaSessao() && (emailMsg.textContent === MSG_EMAIL_EXISTE || cpfMsg.textContent === MSG_CPF_EXISTE)) {
-        sincronizarAvisoExistente();
-        mostrarExistente("Já existe um cadastro com este CPF ou e-mail. Entre no Escritório Virtual.");
-        return false;
-      }
-      if (!etapaValida(etapaInicio)) {
-        reportarEtapa(etapaInicio);
-        return false;
-      }
-      const data = await consultarExistenciaCampo({
-        email: normalizarEmail(emailInput.value),
-        cpf: soDigitos(cpfInput.value)
-      });
-      return !data.existe;
-    };
-
-    continuarBtn.addEventListener("click", async () => {
-      travarEscolha(continuarBtn, "Consultando cadastro...");
-      try {
-        if (!(await validarInicio())) return;
-        payloadAtual = {
-          ...montarPayloadLider(),
-          email: normalizarEmail(emailInput.value)
-        };
-        if (otpDaEscolhaConfirmado()) {
-          abrirEscolha();
-          return;
-        }
-        continuarBtn.textContent = "Enviando código...";
-        const enviado = await enviarCodigo();
-        if (cadastroJaExiste) return;
-        abrirEscolha(enviado);
-      } catch (erro) {
-        mostrarStatus("error", erro.message || "Não foi possível enviar o código.");
-      } finally {
-        liberarEscolha();
-      }
-    });
-
-    completarBtn.addEventListener("click", () => {
-      if (!otpDaEscolhaConfirmado()) {
-        mostrarStatus("error", "Confirme o código enviado por e-mail antes de seguir.");
-        escolhaOtpInput.focus();
-        return;
-      }
+    const irParaDados = () => {
       rastrear("form_choice", { form_id: "cadastro_revendedora", choice: "completar" });
       limparStatus();
       irParaPasso("dados", TEXTO_DADOS);
       emailConfirmaInput.focus();
-    });
+    };
 
-    liderBtn.addEventListener("click", async () => {
-      if (!otpDaEscolhaConfirmado()) {
-        mostrarStatus("error", "Confirme o código enviado por e-mail antes de seguir.");
-        escolhaOtpInput.focus();
-        return;
-      }
+    const enviarParaLider = async () => {
       rastrear("form_choice", { form_id: "cadastro_revendedora", choice: "lider" });
       travarEscolha(liderTitulo, "Enviando...");
       try {
-        if (!(await validarInicio())) return;
         const captchaToken = await obterCaptcha("lider");
         const { resposta, data } = await chamarApi("/api/lider", {
           ...montarPayloadLider(),
           ...extrasLead(captchaToken)
         });
-        if (data.existe) {
+        if (data.existe && Array.isArray(data.campos) && data.campos.length) {
           mostrarExistente(data.message, data.campos);
           return;
         }
@@ -3151,6 +3156,123 @@
       } finally {
         liberarEscolha();
       }
+    };
+
+    const pedirCodigoDaEscolha = async (intencao, titulo) => {
+      if (!payloadAtual) return;
+      intencaoEscolha = intencao;
+      limparStatus();
+      if (otpDaEscolhaConfirmado()) {
+        if (intencao === "lider") await enviarParaLider();
+        else irParaDados();
+        return;
+      }
+      const caixa = document.getElementById("escolha-otp-box");
+      if (caixa && !caixa.hidden) {
+        mostrarOtpEscolha();
+        mostrarStatus("success", "Use o código que já enviamos para o seu e-mail.");
+        escolhaOtpInput.focus();
+        return;
+      }
+      travarEscolha(titulo, "Enviando código...");
+      try {
+        const enviado = await enviarCodigo();
+        mostrarOtpEscolha(enviado);
+      } catch (erro) {
+        mostrarStatus("error", erro.message || "Não foi possível enviar o código.");
+      } finally {
+        liberarEscolha();
+      }
+    };
+
+    // Valida a primeira etapa e consulta se CPF/e-mail já existem. Retorna true se pode seguir.
+    const validarInicio = async () => {
+      limparStatus();
+      limparAcusacaoExistente();
+      validarCpf({ exigirPreenchido: true });
+      validarCep();
+      validarNascimento();
+      if (!etapaValida(etapaInicio)) {
+        reportarEtapa(etapaInicio);
+        return false;
+      }
+      const data = await consultarExistenciaCampo({
+        email: normalizarEmail(emailInput.value),
+        cpf: soDigitos(cpfInput.value)
+      });
+      return !data.existe;
+    };
+
+    const salvarContato = async () => {
+      limparStatus();
+      validarCpf({ exigirPreenchido: true });
+      validarCep();
+      if (!etapaValida(etapaInicio)) {
+        reportarEtapa(etapaInicio);
+        return;
+      }
+      const telefoneNumeros = soDigitos(telefoneInput.value);
+      if (telefoneNumeros.length < 10 || telefoneNumeros.length > 11) {
+        telefoneInput.setCustomValidity("Informe um telefone com DDD.");
+        telefoneInput.reportValidity();
+        telefoneInput.setCustomValidity("");
+        return;
+      }
+      if (soDigitos(cepInput.value).length === 8 && !cidadeInput.value.trim()) {
+        await buscarCep();
+      }
+      if (!cidadeInput.value.trim() || !ufInput.value.trim()) {
+        mostrarStatus("error", "Não encontramos o endereço desse CEP. Confira os números.");
+        cepInput.focus();
+        return;
+      }
+      travarEscolha(continuarBtn, "Salvando...");
+      try {
+        let captchaToken = "";
+        try {
+          captchaToken = await obterCaptcha("contato");
+        } catch {
+          captchaToken = "";
+        }
+        const { resposta, data } = await chamarApi("/api/contato", {
+          nome: form.elements.nome.value.trim(),
+          email: normalizarEmail(emailInput.value),
+          cpf: soDigitos(cpfInput.value),
+          telefone: soDigitos(telefoneInput.value),
+          zipCode: soDigitos(cepInput.value),
+          rua: logradouroInput.value.trim(),
+          bairro: bairroInput.value.trim(),
+          cidade: cidadeInput.value.trim(),
+          uf: ufInput.value.trim().toUpperCase(),
+          complemento: complementoInput ? complementoInput.value.trim() : "",
+          ...extrasLead(captchaToken)
+        });
+        if (!resposta.ok || !data.ok) {
+          mostrarStatus("error", data.message || "Não foi possível salvar seus dados.");
+          return;
+        }
+        irParaPasso("mensagem", {
+          titulo: "Recebemos seus dados",
+          intro: ""
+        });
+        introEl.hidden = true;
+      } catch (erro) {
+        mostrarStatus("error", erro.message || "Não foi possível salvar seus dados.");
+      } finally {
+        liberarEscolha();
+      }
+    };
+
+    continuarBtn.addEventListener("click", () => {
+      salvarContato();
+    });
+
+    completarBtn.addEventListener("click", () => {
+      pedirCodigoDaEscolha("completar", completarTitulo);
+    });
+
+    liderBtn.addEventListener("click", () => {
+      pedirCodigoDaEscolha("lider", liderTitulo);
     });
 
     document.getElementById("lead-lider-completar").addEventListener("click", () => {
@@ -3162,85 +3284,7 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      limparStatus();
-      validarCpf({ exigirPreenchido: true });
-      validarEmails();
-      validarNascimento();
-      validarCep();
-      if (!inicioDaSessao() && (cadastroJaExiste || emailMsg.textContent === MSG_EMAIL_EXISTE || cpfMsg.textContent === MSG_CPF_EXISTE)) {
-        const campos = [];
-        if (cpfMsg.textContent === MSG_CPF_EXISTE) campos.push("CPF");
-        if (emailMsg.textContent === MSG_EMAIL_EXISTE) campos.push("e-mail");
-        mostrarExistente(
-          `Já existe um cadastro com este ${campos.join(" e ") || "CPF ou e-mail"}. Entre no Escritório Virtual.`,
-          campos
-        );
-        return;
-      }
-      if (!etapaValida(etapaInicio)) {
-        irParaPasso("inicio", TEXTO_INICIO);
-        reportarEtapa(etapaInicio);
-        return;
-      }
-      if (!etapaValida(etapaDados)) {
-        reportarEtapa(etapaDados);
-        return;
-      }
-
-      payloadAtual = montarPayload();
-      rastrear("form_submit", { form_id: "cadastro_revendedora" });
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Consultando cadastro...";
-
-      try {
-        const { resposta, data } = await chamarApi("/api/verificar", {
-          email: payloadAtual.email,
-          cpf: payloadAtual.cpf
-        });
-        if ((data.existe || cadastroJaExiste) && !inicioDaSessao(payloadAtual)) {
-          mostrarExistente(data.message, data.campos);
-          return;
-        }
-        if ((!resposta.ok || !data.ok) && !(inicioDaSessao(payloadAtual) && data.existe)) {
-          mostrarStatus("error", data.message || "Não foi possível consultar o cadastro. O código não foi enviado.");
-          return;
-        }
-        if (cadastroJaExiste && !inicioDaSessao(payloadAtual)) {
-          mostrarExistente("Já existe um cadastro com este CPF ou e-mail. Entre no Escritório Virtual.");
-          return;
-        }
-        if (otpDaEscolhaConfirmado()) {
-          submitBtn.textContent = "Criando cadastro...";
-          const captchaLead = await obterCaptcha("lead");
-          await concluirCadastro(captchaLead);
-          return;
-        }
-        submitBtn.textContent = "Enviando código...";
-        const enviado = await enviarCodigo();
-        if (cadastroJaExiste) return;
-        if (!enviado || !enviado.ok) {
-          mostrarStatus("error", enviado?.message || "Não foi possível enviar o código. Fique nesta tela e tente de novo.");
-          return;
-        }
-        mostrarCodigo(enviado.message, enviado.devCode);
-      } catch (erro) {
-        if (/código enviado por e-mail/i.test(erro.message || "")) {
-          emailOtpConfirmado = "";
-          try {
-            submitBtn.textContent = "Enviando código...";
-            const enviado = await enviarCodigo();
-            mostrarCodigo(enviado.message, enviado.devCode);
-            return;
-          } catch (falhaEnvio) {
-            mostrarStatus("error", falhaEnvio.message || "Não foi possível enviar o código.");
-            return;
-          }
-        }
-        mostrarStatus("error", erro.message || "Sem conexão com o servidor de cadastro. Abra a página em http://localhost:3000.");
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Quero começar a vender";
-      }
+      await salvarContato();
     });
 
     otpInput.addEventListener("input", () => {
@@ -3263,9 +3307,17 @@
       validarEscolhaOtpBtn.textContent = "Validando...";
       try {
         await validarCodigoOtp(escolhaOtpInput.value);
+        const intencao = intencaoEscolha;
         sincronizarOpcoesEscolha();
+        if (intencao === "lider") {
+          await enviarParaLider();
+          return;
+        }
+        if (intencao === "completar") {
+          irParaDados();
+          return;
+        }
         mostrarStatus("success", "E-mail confirmado. Escolha como quer seguir.");
-        liderBtn.focus();
       } catch (erro) {
         mostrarStatus("error", erro.message || "Não foi possível validar o código.");
       } finally {
