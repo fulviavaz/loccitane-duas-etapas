@@ -799,6 +799,17 @@
       line-height: 1.55;
       color: #5c463c;
     }
+    .form__dados {
+      margin: 0.45rem 0 1rem;
+      padding: 0;
+      list-style: none;
+      color: #5c463c;
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+    .form__dados li::before {
+      content: "- ";
+    }
     .form__actions {
       display: grid;
       gap: 0.65rem;
@@ -1762,7 +1773,13 @@
           </div>
 
           <div class="form__step form__step--mensagem">
-            <p class="form__mensagem">Em breve, nossa líder L’Occitane au Brésil entrará em contato para guiar seus próximos passos e oferecer todo o suporte na sua primeira compra. Conte com a gente nessa nova jornada!</p>
+            <p class="form__mensagem">Dados cadastrados:</p>
+            <ul class="form__dados">
+              <li>Nome: <span id="lead-resumo-nome"></span></li>
+              <li>Telefone: <span id="lead-resumo-telefone"></span></li>
+              <li>E-mail: <span id="lead-resumo-email"></span></li>
+            </ul>
+            <p class="form__mensagem">Nossa líder L'Occitane entrará em contato em até 24 horas úteis por WhatsApp ou telefone.</p>
           </div>
           <input id="lead-nascimento" type="hidden" name="nascimento" value="" />
           <input id="lead-numero" type="hidden" name="numero" value="" />
@@ -2685,8 +2702,21 @@
     const irParaPasso = (passo, { titulo, intro } = {}) => {
       form.dataset.step = passo;
       if (titulo) titleEl.textContent = titulo;
-      if (intro) introEl.textContent = intro;
+      if (typeof intro === "string") {
+        introEl.textContent = intro;
+        introEl.hidden = intro === "";
+      }
       rastrear("form_step", { form_id: "cadastro_revendedora", form_step: passo });
+    };
+
+    const mostrarResumoCadastro = (dados) => {
+      document.getElementById("lead-resumo-nome").textContent = dados.nome;
+      document.getElementById("lead-resumo-telefone").textContent = dados.telefone;
+      document.getElementById("lead-resumo-email").textContent = dados.email;
+      irParaPasso("mensagem", {
+        titulo: "Cadastro realizado com sucesso.",
+        intro: ""
+      });
     };
 
     const origemCadastro = () => {
@@ -3226,6 +3256,11 @@
         cepInput.focus();
         return;
       }
+      const dadosCadastrados = {
+        nome: form.elements.nome.value.trim(),
+        telefone: mascararTelefone(telefoneNumeros),
+        email: normalizarEmail(emailInput.value)
+      };
       travarEscolha(continuarBtn, "Salvando...");
       try {
         let captchaToken = "";
@@ -3251,11 +3286,7 @@
           mostrarStatus("error", data.message || "Não foi possível salvar seus dados.");
           return;
         }
-        irParaPasso("mensagem", {
-          titulo: "Recebemos seus dados",
-          intro: ""
-        });
-        introEl.hidden = true;
+        mostrarResumoCadastro(dadosCadastrados);
       } catch (erro) {
         mostrarStatus("error", erro.message || "Não foi possível salvar seus dados.");
       } finally {
